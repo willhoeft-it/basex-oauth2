@@ -12,7 +12,9 @@ import module namespace oa = "oauth2" at "oauth2.xqm";
 
 (:~
  : Map of roles to permissions. The key is the role as defined in the identity provider, the value is a sequence of permissions
- : for each role.
+ : for each role. For a more dynamic approach, the map could be stored in BaseX and be changed even during runtime. The general
+ : idea is that the application should only deal with permissions, while the identity provider knows only about roles. This keeps
+ : the complexity on both sides low but still allows for high flexibility without changing the application code.
  :)
 declare variable $page:rolesToPermissions := map {
   "admin": ("systemSettings", "viewItem", "editItem"),

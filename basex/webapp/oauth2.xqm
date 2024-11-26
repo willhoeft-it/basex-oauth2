@@ -41,7 +41,7 @@ declare function oa:redirectAuthorize($redirectUri as xs:string) as element(rest
 (:~
  : Decodes the special base64 url encoding, which is used in JWT. It is similar to base64, but uses two different characters and lacks the padding.
  : @param $input the base64 url encoded string
- : @return the base64 string
+ : @return the decoded string
  :)
 declare function oa:base64UrlToUtf8($input as xs:string) as xs:string {
   let $chReplaced := replace(replace($input, '-', '+'), '_', '/')
@@ -106,7 +106,8 @@ declare function oa:completeAuthorizationCodeGrant($code as xs:string, $state as
           error(xs:QName("oa:completeAuthorization"), "Unexpected response content type: " || $response[1]/@media-type)
         else
           (: because the response content mime type is application/json, it has been automatically parsed as JSON :)
-          let $json := tail($response) 
+          let $json := tail($response)
+          (: TODO: we could (should?) do some verifications on the JWT here. E.g. check syntax, compare the timestamps, verify the signature :)
           let $accessToken := oa:parse-jwt($json/json/access__token)
           let $idToken := oa:parse-jwt($json/json/id__token)
           let $userId := $idToken/content/email/text()
@@ -119,7 +120,8 @@ declare function oa:completeAuthorizationCodeGrant($code as xs:string, $state as
 };
 
 (:~
- : Closes the session and tells the OAuth2 server to invalidate its tokens. We do not use the OAuth2 server's logout redirect but rather do it ourselves.
+ : Closes the session and tells the OAuth2 server to invalidate its tokens. We do not use the OAuth2 server's logout redirect but rather
+ : do it ourselves.
  :)
 declare function oa:logout() as empty-sequence() {
 (
@@ -135,6 +137,6 @@ declare function oa:logout() as empty-sequence() {
   let $response := http:send-request($request, $url)
   return
     if (xs:integer($response[1]/@status) >= 400) then
-      message(("Failed loging out from OAuth2 server: ", $response))
+      message(("Failed logging out of OAuth2 server: ", $response))
 ) => void()
 };

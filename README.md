@@ -39,3 +39,6 @@ sudo docker compose up -d
 * With your logged in admin user in the FusionAuth admin panel edit the other user's registration and add the role "viewer".
 * Log the other user out and back in. Now you can access the "View item" page.
 
+## Roles and permissions
+
+The general idea is that the application should only deal with rather atomic permissions, while the identity provider knows only about roles. This keeps the complexity on both sides low but still allows for high flexibility without changing the application code. In restxq.xqm there is a constant which maps roles to one or more permissions. For a more dynamic approach, the map could be stored in BaseX and be changed even during runtime.
