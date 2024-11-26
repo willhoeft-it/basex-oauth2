@@ -10,6 +10,10 @@ import module namespace oa = "oauth2" at "oauth2.xqm";
 
 (: ========= Permission handling ============ :)
 
+(:~
+ : Map of roles to permissions. The key is the role as defined in the identity provider, the value is a sequence of permissions
+ : for each role.
+ :)
 declare variable $page:rolesToPermissions := map {
   "admin": ("systemSettings", "viewItem", "editItem"),
   "viewer": "viewItem",
@@ -19,7 +23,7 @@ declare variable $page:rolesToPermissions := map {
 declare variable $page:oauthLandingPage := environment-variable("RESTXQ_BASE_URL") || "/oauth-redirect";
 
 (:~
- : Permission check: all internal urls need logged-in user, and some also need specific roles.
+ : Permission check: all internal urls need logged-in user, and some also need specific permissions.
  : A user can have multiple roles, and each role can have multiple permissions. Check expects a single necessary permission per request.
  : @param $perm map with permission data
  :)
@@ -28,15 +32,16 @@ declare
   %perm:check('internal/', '{$perm}')
 function page:checkInternal($perm as map(*)) {
   let $permission := $perm?allow
-  let $path := $perm?path
+  let $queryParams := request:query()
+  let $path := $perm?path || (if ($queryParams) then ("?" || $queryParams))
   let $userId := session:get('userId')
   let $roles := session:get('oa:roles')
   return (
     message("Permission check, path: " || $path || ", permission: " || $permission || ", userId: " || $userId || ", roles: " || $roles),
     if (empty($userId)) then (
       (: Not logged in, redirect to authorization :)
-      (: Save the path the user wanted :)
-      (: TODO: unfortunately we cannot access, check and/or save the requested URL-Parameters, etc. in this context :)
+      (: Save the path the user wanted to access. Note that redirection to this path does not make sense for POST or PUT requests with a content,
+         as the content will be lost. If or how this should be handled depends on the application :)
       session:set('requestedPathForAuth', $path),
       oa:redirectAuthorize($page:oauthLandingPage)
     )
